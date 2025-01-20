@@ -20,7 +20,7 @@ data "aws_availability_zones" "available" {}
 
 # Subnets publics
 resource "aws_subnet" "public_subnets" {
-  count             = 3//3
+  count             = 3///3
   vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index) # Divise le CIDR en subnets publics
   availability_zone = data.aws_availability_zones.available.names[count.index]
