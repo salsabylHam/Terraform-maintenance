@@ -1,7 +1,5 @@
 locals {
   subnets = cidrsubnet(var.cidr, 8, )
-
-
 }
 
 # Créer un VPC
@@ -12,7 +10,7 @@ resource "aws_vpc" "main_vpc" {
 
   tags = merge({
     Name = var.vpc_name
-  },var.tags)
+  }, var.tags)
 }
 
 # Data pour zones de disponibilité cette resoucrce recupere les zone dispo awd dans le regison active 
@@ -20,10 +18,10 @@ data "aws_availability_zones" "available" {}
 
 # Subnets publics
 resource "aws_subnet" "public_subnets" {
-  count             = 3//3
-  vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index) # Divise le CIDR en subnets publics
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  for_each                = var.public_subnets
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = each.value
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true
 
   tags = {
@@ -33,9 +31,9 @@ resource "aws_subnet" "public_subnets" {
 
 # Subnets privés
 resource "aws_subnet" "private_subnets" {
-  count             = 3
+  for_each          = var.private_subnets
   vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index + 3) # Divise en subnets privés
+  cidr_block        = each.value
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
@@ -46,7 +44,7 @@ resource "aws_subnet" "private_subnets" {
 # Internet Gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main_vpc.id
-  
+
   tags = {
     Name = "InternetGateway-${var.vpc_name}"
   }
@@ -110,11 +108,11 @@ resource "aws_route_table_association" "private_subnet_association" {
 
 # Subnets pour la base de données
 resource "aws_subnet" "db_subnets" {
-  count             = 2
-  vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index + 6) # Plage CIDR réservée aux DB
-  availability_zone = data.aws_availability_zones.available.names[count.index] # Zones de disponibilité
-  map_public_ip_on_launch = false # Pas d'IP publique pour les subnets de la DB
+  count                   = 2
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index + 6) # Plage CIDR réservée aux DB
+  availability_zone       = data.aws_availability_zones.available.names[count.index]    # Zones de disponibilité
+  map_public_ip_on_launch = false                                                       # Pas d'IP publique pour les subnets de la DB
 
   tags = {
     Name = "DB-Subnet-${count.index + 1}"
