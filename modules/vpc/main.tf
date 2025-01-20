@@ -1,12 +1,18 @@
+locals {
+  subnets = cidrsubnet(var.cidr, 8, )
+
+
+}
+
 # Créer un VPC
 resource "aws_vpc" "main_vpc" {
-  cidr_block           = "10.3.0.0/16" # Plage d'adresses IP pour tout le VPC
+  cidr_block           = var.cidr # Plage d'adresses IP pour tout le VPC
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = {
-    Name = "PFE-VPC"
-  }
+  tags = merge({
+    Name = var.vpc_name
+  },var.tags)
 }
 
 # Data pour zones de disponibilité cette resoucrce recupere les zone dispo awd dans le regison active 
@@ -14,7 +20,7 @@ data "aws_availability_zones" "available" {}
 
 # Subnets publics
 resource "aws_subnet" "public_subnets" {
-  count             = 3
+  count             = 3//3
   vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index) # Divise le CIDR en subnets publics
   availability_zone = data.aws_availability_zones.available.names[count.index]
@@ -33,7 +39,7 @@ resource "aws_subnet" "private_subnets" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name = "Private-Subnet-${count.index + 1}"
+    Name = "Private-Subnet-${var.vpc_name}"
   }
 }
 
@@ -42,7 +48,7 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main_vpc.id
   
   tags = {
-    Name = "PFE-InternetGateway"
+    Name = "InternetGateway-${var.vpc_name}"
   }
 }
 
@@ -119,10 +125,10 @@ resource "aws_subnet" "db_subnets" {
 resource "aws_route_table" "db_route_table" {
   vpc_id = aws_vpc.main_vpc.id
 
-  route {
-    cidr_block     = "0.0.0.0/0" # Accès Internet via le NAT Gateway
-    nat_gateway_id = aws_nat_gateway.nat_gw.id
-  }
+  # route {
+  #   cidr_block     = "0.0.0.0/0" # Accès Internet via le NAT Gateway
+  #   nat_gateway_id = aws_nat_gateway.nat_gw.id
+  # }
 
   tags = {
     Name = "DB-RouteTable"
