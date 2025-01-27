@@ -27,7 +27,7 @@ resource "aws_subnet" "public_subnets" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "Public-Subnet-${count.index + 1}"
+       Name = "Public-Subnet-${each.key + 1}"
   }
 }
 
@@ -38,9 +38,10 @@ resource "aws_subnet" "private_subnets" {
   cidr_block        = each.value
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
-  tags = {
-    Name = "Private-Subnet-${var.vpc_name}"
+    tags = {
+    Name = "Private-Subnet-${var.vpc_name}-${each.key + 1}"
   }
+
 }
 
 # Internet Gateway
@@ -87,23 +88,24 @@ resource "aws_nat_gateway" "nat_gw" {
   }
 }
 
-# Route Table pour Subnets Privés
+# Route Table pour Subnets Privés (Loopback)
 resource "aws_route_table" "private_route_table" {
   vpc_id = aws_vpc.main_vpc.id
 
+  # Route interne pour autoriser uniquement le trafic local au VPC
   route {
-    cidr_block     = "0.0.0.0/0" # Route Internet via le NAT Gateway
-    nat_gateway_id = aws_nat_gateway.nat_gw.id
+    cidr_block = var.cidr # Plage CIDR du VPC
+    gateway_id = "local"
   }
 
   tags = {
-    Name = "Private-RouteTable"
+    Name = "Private-RouteTable-Loopback"
   }
 }
 
-# Attacher les Subnets Privés à la Table de Routage Privée
+# Mise à jour des Subnets Privés pour utiliser la table de routage Loopback
 resource "aws_route_table_association" "private_subnet_association" {
-  count          = 3
+  count          = length(var.private_subnets)
   subnet_id      = aws_subnet.private_subnets[count.index].id
   route_table_id = aws_route_table.private_route_table.id
 }
