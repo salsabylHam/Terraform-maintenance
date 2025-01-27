@@ -21,7 +21,10 @@ module "vpc" {
   tags = {}
 }
 
+<<<<<<< HEAD
 /*
+=======
+>>>>>>> 913c1f88951a3b78b43f587dadf033d82ad85ad5
 module "rds" {
   source                = "../../modules/rds"
   db_instance_identifier = "my-rds-instance"
@@ -38,5 +41,8 @@ module "rds" {
     Project     = "PFE"
   }
 }
+<<<<<<< HEAD
 */
+=======
+>>>>>>> 913c1f88951a3b78b43f587dadf033d82ad85ad5
 

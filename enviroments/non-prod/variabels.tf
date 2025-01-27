@@ -2,8 +2,11 @@ variable "cidr" {
   type = string
    
 }
+<<<<<<< HEAD
 
 /*
+=======
+>>>>>>> 913c1f88951a3b78b43f587dadf033d82ad85ad5
 variable "db_instance_identifier" {
   type = string
 }
@@ -32,4 +35,7 @@ variable "db_password" {
   type = string
   sensitive = true
 }
+<<<<<<< HEAD
 */
+=======
+>>>>>>> 913c1f88951a3b78b43f587dadf033d82ad85ad5
