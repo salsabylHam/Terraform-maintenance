@@ -1,15 +1,15 @@
-output "rds_endpoint" {
-  value = module.rds.rds_instance_endpoint
-}
+# output "rds_cluster_endpoint" {
+#   value       = module.rds.rds_cluster_endpoint
+#   description = "The endpoint of the Aurora cluster"
+# }
 
-<<<<<<< HEAD
+# output "rds_instance_endpoint" {
+#   value       = module.rds.rds_instance_endpoint
+#   description = "The endpoint of the Aurora instance"
+# }
+
 /*
 output "rds_arn" {
   value = module.rds.rds_instance_arn
 }
 */
-=======
-output "rds_arn" {
-  value = module.rds.rds_instance_arn
-}
->>>>>>> 913c1f88951a3b78b43f587dadf033d82ad85ad5

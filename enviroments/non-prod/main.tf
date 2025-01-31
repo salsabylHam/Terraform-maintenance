@@ -7,7 +7,7 @@ locals {
 }
 
 module "vpc" {
-  source = "./modules/vpc"
+  source = "../../modules/vpc"
 
   cidr            = var.cidr
   vpc_name        = "my-vpc"
@@ -16,33 +16,26 @@ module "vpc" {
   public_subnets  = slice(local.subnets, 3, 6)
   db_subnets      = slice(local.subnets, 6, 8)
 
-  region          = ""
-
-  tags = {}
+  region          = "eu-west-3"   # Assurez-vous de passer la région ici
+  tags            = {}
 }
 
-<<<<<<< HEAD
-/*
-=======
->>>>>>> 913c1f88951a3b78b43f587dadf033d82ad85ad5
+
 module "rds" {
-  source                = "../../modules/rds"
-  db_instance_identifier = "my-rds-instance"
-  db_instance_class      = "db.t3.micro"
-  db_engine              = "mysql"
-  db_engine_version      = "8.0.28"
-  db_name                = "mydatabase"
+  source = "../../modules/rds"
+
+  db_name                = "mydb"
   db_username            = "admin"
-  db_password            = "SuperSecurePassword123"
-  db_subnets             = module.vpc.db_subnets
-  security_group_ids     = [module.vpc.default_sg_id] # Utilisez le SG du module VPC
-  tags = {
-    Environment = "dev"
-    Project     = "PFE"
-  }
+  db_password            = ""
+  
+  resource_name_prefix   = "myapp"
+  tags                   = {}
+  vpc_id = data.aws_vpc.vpc.id
+  subnet_ids = data.aws_subnets.db_subnets.ids
 }
-<<<<<<< HEAD
-*/
-=======
->>>>>>> 913c1f88951a3b78b43f587dadf033d82ad85ad5
+
+
+
+
+
 
