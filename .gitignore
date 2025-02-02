@@ -8,3 +8,7 @@ crash.log
 *.exe
 # Terraform tfvars file to ignore
 enviroments/non-prod/terraform.tfvars
+/enviroments/non-prod/.terraform/
+/enviroments/non-prod/.terraform/
+*.tfstate
+*.tfstate.backup
