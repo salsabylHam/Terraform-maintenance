@@ -6,3 +6,5 @@ terraform.tfstate.d/
 crash.log
 .terraform.lock.hcl
 *.exe
+# Terraform tfvars file to ignore
+enviroments/non-prod/terraform.tfvars
