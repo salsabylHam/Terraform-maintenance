@@ -1,16 +1,19 @@
-# Terraform files to ignore
+# Fichiers Terraform
 .terraform/
 *.tfstate
 *.tfstate.backup
-terraform.tfstate.d/
-crash.log
+*.tfvars
+
+# Fichiers de cache et plugins
 .terraform.lock.hcl
-*.exe
-# Terraform tfvars file to ignore
-enviroments/non-prod/terraform.tfvars
-/enviroments/non-prod/.terraform/
-/enviroments/non-prod/.terraform/
-*.tfstate
-*.tfstate.backup
-.terraform/
-*.exe
+.terraform/providers/
+.terraform/plugins/
+
+# Fichiers temporaires
+*.log
+*.tmp
+
+# Autres fichiers inutiles
+.DS_Store
+.idea/
+.vscode/
