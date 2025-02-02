@@ -1,7 +1,10 @@
-output "rds_instance_endpoint" {
-  value = aws_db_instance.rds_instance.endpoint
-}
+# # Sortie pour afficher les informations
+# output "rds_cluster_endpoint" {
+#   value = aws_rds_cluster.default.endpoint
+#   description = "RDS Cluster Endpoint"
+# # 
 
-output "rds_instance_arn" {
-  value = aws_db_instance.rds_instance.arn
-}
+# output "rds_instance_endpoint" {
+#   value = aws_rds_cluster_instance.default.endpoint
+#   description = "RDS Instance Endpoint"
+# }

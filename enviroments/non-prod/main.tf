@@ -20,7 +20,6 @@ module "vpc" {
   tags            = {}
 }
 
-
 module "rds" {
   source = "../../modules/rds"
 

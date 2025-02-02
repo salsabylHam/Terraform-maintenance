@@ -1,55 +1,83 @@
-locals {
-  subnets = cidrsubnet(var.cidr, 8, )
-}
-
-# Créer un VPC
+# Définir le VPC avec une plage CIDR /16
 resource "aws_vpc" "main_vpc" {
-  cidr_block           = var.cidr # Plage d'adresses IP pour tout le VPC
+  cidr_block           = var.cidr # Plage CIDR principale
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = merge({
-    Name = var.vpc_name
-  }, var.tags)
+  tags = {
+    Name = "Main-VPC"
+  }
 }
 
-# Data pour zones de disponibilité cette resoucrce recupere les zone dispo awd dans le regison active 
+# Zones de disponibilité disponibles
 data "aws_availability_zones" "available" {}
 
-# Subnets publics
+# Subnets publics (3 sous-réseaux)
 resource "aws_subnet" "public_subnets" {
-
-  for_each                = var.public_subnets
+  count                   = 3
   vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = each.value
+  cidr_block              = cidrsubnet(aws_vpc.main_vpc.cidr_block, 4, count.index) # Génère une plage pour chaque sous-réseau public
   availability_zone       = data.aws_availability_zones.available.names[count.index]
-
   map_public_ip_on_launch = true
 
   tags = {
-       Name = "Public-Subnet-${each.key + 1}"
+    Name = "Public-Subnet-${count.index + 1}"
   }
 }
 
-# Subnets privés
+# Subnets privés (3 sous-réseaux)
 resource "aws_subnet" "private_subnets" {
-  for_each          = var.private_subnets
+  count             = 3
   vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = each.value
+  cidr_block        = cidrsubnet(aws_vpc.main_vpc.cidr_block, 4, count.index + 3)
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
-    tags = {
-    Name = "Private-Subnet-${var.vpc_name}-${each.key + 1}"
+  tags = {
+    Name = "Private-Subnet-${count.index + 1}"
+  }
+}
+
+# Subnets pour la base de données (2 sous-réseaux)
+resource "aws_subnet" "db_subnets" {
+  count                   = 2
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = cidrsubnet(aws_vpc.main_vpc.cidr_block, 4, count.index + 6)
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "DB-Subnet-${count.index + 1}"
+  }
+}
+
+# Route Table pour DB (Loopback uniquement)
+resource "aws_route_table" "db_route_table" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  route {
+    cidr_block = aws_vpc.main_vpc.cidr_block
+    gateway_id = "local"
   }
 
+  tags = {
+    Name = "DB-RouteTable"
+  }
 }
+
+# Association des subnets DB à leur table de routage
+resource "aws_route_table_association" "db_subnet_association" {
+  count          = length(aws_subnet.db_subnets)
+  subnet_id      = aws_subnet.db_subnets[count.index].id
+  route_table_id = aws_route_table.db_route_table.id
+}
+
 
 # Internet Gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main_vpc.id
 
   tags = {
-    Name = "InternetGateway-${var.vpc_name}"
+    Name = "Main-InternetGateway"
   }
 }
 
@@ -58,7 +86,7 @@ resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.main_vpc.id
 
   route {
-    cidr_block = "0.0.0.0/0" # Route vers Internet
+    cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
 
@@ -67,107 +95,46 @@ resource "aws_route_table" "public_route_table" {
   }
 }
 
-# Attacher les Subnets Publics à la Table de Routage
+# Association des subnets publics à leur table de routage
 resource "aws_route_table_association" "public_subnet_association" {
-  count          = 3
+  count          = length(aws_subnet.public_subnets)
   subnet_id      = aws_subnet.public_subnets[count.index].id
   route_table_id = aws_route_table.public_route_table.id
 }
 
-# NAT Gateway pour les Subnets Privés
+# NAT Gateway et EIP pour les subnets privés
 resource "aws_eip" "nat_eip" {
   vpc = true
 }
 
 resource "aws_nat_gateway" "nat_gw" {
   allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.public_subnets[0].id # NAT dans un subnet public
+  subnet_id     = aws_subnet.public_subnets[0].id
 
   tags = {
-    Name = "PFE-NATGateway"
+    Name = "Main-NATGateway"
   }
 }
 
-# Route Table pour Subnets Privés (Loopback)
+# Route Table pour Subnets Privés
 resource "aws_route_table" "private_route_table" {
   vpc_id = aws_vpc.main_vpc.id
 
-  # Route interne pour autoriser uniquement le trafic local au VPC
   route {
-    cidr_block = var.cidr # Plage CIDR du VPC
-    gateway_id = "local"
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gw.id
   }
 
   tags = {
-    Name = "Private-RouteTable-Loopback"
+    Name = "Private-RouteTable"
   }
 }
 
-# Mise à jour des Subnets Privés pour utiliser la table de routage Loopback
+# Association des subnets privés à leur table de routage
 resource "aws_route_table_association" "private_subnet_association" {
-  count          = length(var.private_subnets)
+  count          = length(aws_subnet.private_subnets)
   subnet_id      = aws_subnet.private_subnets[count.index].id
   route_table_id = aws_route_table.private_route_table.id
 }
 
-# Subnets pour la base de données
-resource "aws_subnet" "db_subnets" {
-  count                   = 2
-  vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index + 6) # Plage CIDR réservée aux DB
-  availability_zone       = data.aws_availability_zones.available.names[count.index]    # Zones de disponibilité
-  map_public_ip_on_launch = false                                                       # Pas d'IP publique pour les subnets de la DB
 
-  tags = {
-    Name = "DB-Subnet-${count.index + 1}"
-  }
-}
-
-# Route Table privée pour les subnets DB
-resource "aws_route_table" "db_route_table" {
-  vpc_id = aws_vpc.main_vpc.id
-
-  # route {
-  #   cidr_block     = "0.0.0.0/0" # Accès Internet via le NAT Gateway
-  #   nat_gateway_id = aws_nat_gateway.nat_gw.id
-  # }
-
-  tags = {
-    Name = "DB-RouteTable"
-  }
-}
-
-# Associer les subnets DB à la route table privée
-resource "aws_route_table_association" "db_subnet_association" {
-  count          = 2
-  subnet_id      = aws_subnet.db_subnets[count.index].id
-  route_table_id = aws_route_table.db_route_table.id
-}
-
-
-
-
-
-
-# Default Security Group
-resource "aws_security_group" "default_sg" {
-  vpc_id = aws_vpc.main_vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "Default-SecurityGroup"
-  }
-}

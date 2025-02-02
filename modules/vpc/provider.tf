@@ -1,3 +1,4 @@
+# provider.tf dans le module vpc
 provider "aws" {
-  region = "eu-west-1" # Choisir la région (Europe de l’Ouest)
+  region = var.region
 }
