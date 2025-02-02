@@ -1,20 +1,16 @@
-# Terraform state files
+# Terraform files to ignore
+.terraform/
 *.tfstate
 *.tfstate.backup
-
-# .terraform directory
-.terraform/
-
-# Crash logs
+terraform.tfstate.d/
 crash.log
-
-# Terraform plan output files
-*.tfplan
-
-# IDE files
-.idea/
-.vscode/
-
-# OS-specific files
-.DS_Store
-Thumbs.db
+.terraform.lock.hcl
+*.exe
+.terraform/
+*.tfstate
+*.exe
+.terraform.lock.hcl
+.terraform/
+*.tfstate
+*.exe
+.terraform.lock.hcl
