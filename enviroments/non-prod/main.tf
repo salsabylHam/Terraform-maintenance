@@ -33,6 +33,21 @@ module "rds" {
   subnet_ids = data.aws_subnets.db_subnets.ids
 }
 
+module "ecs" {
+  source               = "../../modules/ecs"
+  cluster_name         = "nginx-cluster"
+  vpc_id = data.aws_vpc.vpc.id
+  image                = "nginx:latest"
+  container_name       = "nginx-app"
+  task_cpu             = 256
+  task_memory          = 512
+  desired_count        = 1
+  ecs_service_name     = "nginx-service"
+  listener_port        = 80
+  public_subnets = data.aws_subnets.public_subnets.ids
+
+}
+
 
 
 

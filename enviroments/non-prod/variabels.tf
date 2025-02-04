@@ -14,3 +14,5 @@ variable "cidr" {
   type        = string
   default     = "10.4.0.0/16"  # Exemple de CIDR
 }
+
+
